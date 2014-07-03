@@ -20,7 +20,8 @@ class ProviderTestCase(BasicSessionCase):
         super(ProviderTestCase, self).setUp()
 
         # Log in.
-        self.session['uuid'] = 'verified-user'
+        self.buyer_uuid = 'verified-user'
+        self.session['uuid'] = self.buyer_uuid
         # Start a payment.
         self.trans_id = 'solitude-trans-uuid'
         self.session['trans_id'] = self.trans_id
@@ -83,7 +84,8 @@ class TestProviderSuccess(ProviderTestCase):
         self.trust_notice()
         res = self.success()
         eq_(res.status_code, 200)
-        self.payment_notify.delay.assert_called_with(self.trans_id)
+        self.payment_notify.delay.assert_called_with(self.trans_id,
+                                                     self.buyer_uuid)
         self.assertTemplateUsed(res, 'provider/success.html')
 
     def test_error(self):
@@ -173,6 +175,10 @@ class TestNotification(ProviderTestCase):
 
     def setUp(self):
         super(TestNotification, self).setUp()
+        self.buyer_uuid = 'buyer_uuid'
+        self.session['uuid'] = self.buyer_uuid
+        self.save_session()
+
         self.url = reverse('provider.notification', args=['boku'])
         self.slumber.generic.transaction.get_object.return_value = {
             'uuid': self.trans_id,
@@ -188,7 +194,8 @@ class TestNotification(ProviderTestCase):
         eq_(res.status_code, 200)
         self.slumber.provider.boku.event.post.assert_called_with(
             {'param': [self.trans_id]})
-        self.payment_notify.delay.assert_called_with(self.trans_id)
+        self.payment_notify.delay.assert_called_with(self.trans_id,
+                                                     self.buyer_uuid)
 
     @raises(NotImplementedError)
     def test_not_implemented(self):

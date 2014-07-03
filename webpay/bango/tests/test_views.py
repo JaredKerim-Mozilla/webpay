@@ -4,7 +4,6 @@ import urllib
 from django.core.urlresolvers import reverse
 
 import mock
-from mock import ANY
 from nose.tools import eq_
 from slumber.exceptions import HttpClientError
 from test_utils import TestCase
@@ -19,7 +18,8 @@ class TestBangoReturn(BasicSessionCase):
     def setUp(self):
         super(TestBangoReturn, self).setUp()
         # Log in.
-        self.session['uuid'] = 'verified-user'
+        self.buyer_uuid = 'verified-user'
+        self.session['uuid'] = self.buyer_uuid
         # Start a payment.
         self.trans_uuid = 'solitude-trans-uuid'
         self.session['trans_id'] = self.trans_uuid
@@ -45,7 +45,8 @@ class TestBangoReturn(BasicSessionCase):
 
     def test_good_return(self, payment_notify, slumber):
         self.call()
-        payment_notify.delay.assert_called_with(self.trans_uuid)
+        payment_notify.delay.assert_called_with(self.trans_uuid,
+                                                self.buyer_uuid)
 
     def test_invalid_return(self, payment_notify, slumber):
         err = HttpClientError

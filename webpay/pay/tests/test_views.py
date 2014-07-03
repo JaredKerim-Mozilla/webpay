@@ -546,6 +546,9 @@ class TestPostback(Base):
 
     def setUp(self):
         super(TestPostback, self).setUp()
+        self.session['uuid'] = '<user_uuid>'
+        self.save_session()
+
         self.callback_success = reverse('pay.callback_success_url')
         self.callback_error = reverse('pay.callback_error_url')
 

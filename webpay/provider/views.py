@@ -78,7 +78,7 @@ def success(request, provider_name):
     except msg.DevMessage as m:
         return system_error(request, code=m.code)
 
-    tasks.payment_notify.delay(transaction_id)
+    tasks.payment_notify.delay(transaction_id, request.session['uuid'])
     return render(request, 'provider/success.html')
 
 
@@ -119,6 +119,6 @@ def notification(request, provider_name):
     log.info('Processing notification for transaction {t}; status={s}'
              .format(t=transaction_uuid, s=trans['status']))
     if trans['status'] == STATUS_COMPLETED:
-        tasks.payment_notify.delay(transaction_uuid)
+        tasks.payment_notify.delay(transaction_uuid, request.session['uuid'])
 
     return HttpResponse('OK')

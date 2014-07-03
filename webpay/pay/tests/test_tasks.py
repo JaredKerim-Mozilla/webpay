@@ -34,7 +34,8 @@ class NotifyTest(JWTtester, test.TestCase):
 
     def setUp(self):
         super(NotifyTest, self).setUp()
-        self.trans_uuid = 'some:uuid'
+        self.trans_uuid = 'trans_uuid'
+        self.buyer_uuid = 'buyer_uuid'
 
     def set_secret_mock(self, slumber, s):
         slumber.generic.product.get_object_or_404.return_value = {'secret': s}
@@ -71,7 +72,7 @@ class TestNotifyApp(NotifyTest):
             'uuid': self.trans_uuid,
         }
         with self.settings(INAPP_KEY_PATHS={None: sample}, DEBUG=True):
-            tasks.payment_notify('some:uuid')
+            tasks.payment_notify(self.trans_uuid, self.buyer_uuid)
 
     @fudge.patch('webpay.pay.utils.requests')
     @mock.patch('lib.solitude.api.client.slumber')
@@ -86,6 +87,7 @@ class TestNotifyApp(NotifyTest):
             eq_(dd['typ'], payload['typ'])
             eq_(dd['response']['price']['amount'], 1)
             eq_(dd['response']['price']['currency'], u'USD')
+            eq_(dd['response']['buyer_uuid'], self.buyer_uuid)
             jwt.decode(req['notice'], 'f', verify=True)
             return True
 
@@ -234,7 +236,7 @@ class TestNotifyApp(NotifyTest):
                 app_payment['request']['productdata'])
             eq_(data['request']['postbackURL'], 'http://foo.url/post')
             eq_(data['request']['chargebackURL'], 'http://foo.url/charge')
-            eq_(data['response']['transactionID'], 'some:uuid')
+            eq_(data['response']['transactionID'], self.trans_uuid)
             assert data['iat'] <= gmtime() + 60, (
                 'Expected iat to be about now')
             assert data['exp'] > gmtime() + 3500, (
@@ -245,7 +247,7 @@ class TestNotifyApp(NotifyTest):
                                             arg.passes_test(is_valid),
                                             timeout=arg.any())
                                  .returns_fake()
-                                 .has_attr(text='some:uuid')
+                                 .has_attr(text=self.trans_uuid)
                                  .provides('raise_for_status'))
         self.notify()
 

@@ -1,5 +1,3 @@
-import uuid
-
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import render
@@ -97,7 +95,8 @@ def success(request):
         return system_error(request, code=result)
 
     # Signature verification was successful; fulfill the payment.
-    tasks.payment_notify.delay(request.GET.get('MerchantTransactionId'))
+    tasks.payment_notify.delay(request.GET.get('MerchantTransactionId'),
+                               request.session['uuid'])
     return render(request, 'bango/success.html')
 
 

@@ -408,7 +408,8 @@ def _callback_url(request, is_success):
         if 'ext_transaction_id' in querystring:
             ext_transaction_id = querystring['ext_transaction_id']
             if is_success:
-                tasks.payment_notify.delay(ext_transaction_id)
+                buyer_uuid = request.session['uuid']
+                tasks.payment_notify.delay(ext_transaction_id, buyer_uuid)
             else:
                 tasks.chargeback_notify.delay(ext_transaction_id)
             return http.HttpResponse(status=204)

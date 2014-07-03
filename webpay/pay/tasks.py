@@ -276,7 +276,7 @@ def start_pay(transaction_uuid, notes, user_uuid, provider_names, **kw):
 
 @task(**notify_kw)
 @use_master
-def payment_notify(transaction_uuid, **kw):
+def payment_notify(transaction_uuid, buyer_uuid, **kw):
     """
     Notify the app of a successful payment by posting a JWT.
 
@@ -288,7 +288,7 @@ def payment_notify(transaction_uuid, **kw):
       customer actually paid in.
     """
     transaction = client.get_transaction(transaction_uuid)
-    _notify(payment_notify, transaction)
+    _notify(payment_notify, transaction, buyer_uuid=buyer_uuid)
 
 
 @task(**notify_kw)
@@ -399,8 +399,8 @@ def get_icon_url(request):
         return None
 
 
-def _notify(notifier_task, trans, extra_response=None, simulated=NOT_SIMULATED,
-            task_args=None):
+def _notify(notifier_task, trans, buyer_uuid=None, extra_response=None,
+            simulated=NOT_SIMULATED, task_args=None):
     """
     Post JWT notice to an app server about a payment.
     """
@@ -416,6 +416,10 @@ def _notify(notifier_task, trans, extra_response=None, simulated=NOT_SIMULATED,
 
     response['price'] = {'amount': trans['amount'],
                          'currency': trans['currency']}
+
+    if buyer_uuid is not None:
+        response['buyer_uuid'] = buyer_uuid
+
     issued_at = gmtime()
     notice = {'iss': settings.NOTIFY_ISSUER,
               'aud': notes['issuer_key'],
